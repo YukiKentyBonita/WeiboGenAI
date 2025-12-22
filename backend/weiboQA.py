@@ -1,4 +1,4 @@
-from backend.buildFAISSIndex import get_embedding_model, build_faiss_index
+from buildFAISSIndex import get_embedding_model, build_faiss_index
 
 from langchain_openai import ChatOpenAI
 from langchain_community.vectorstores import FAISS
@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 from datetime import datetime
 
-from backend.time_question_helper import looks_like_recent_question, parse_created_at, get_most_recent_docs, dedupe_docs
+from time_question_helper import looks_like_recent_question, parse_created_at, get_most_recent_docs, dedupe_docs
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
