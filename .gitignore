@@ -1,0 +1,19 @@
+# secrets
+.env
+credentials/
+**/credentials/
+secretkey.py
+**/secretkey.py
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+
+# streamlit
+.streamlit/
+
+# local indexes / artifacts (optional)
+weibo_faiss_index/
+backend/weibo_faiss_index/
+indexes/

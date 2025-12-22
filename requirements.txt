@@ -1,0 +1,13 @@
+streamlit
+pandas
+numpy
+faiss-cpu
+boto3
+
+langchain
+langchain-community
+langchain-openai
+langchain-huggingface
+
+openai
+
