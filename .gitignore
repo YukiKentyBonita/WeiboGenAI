@@ -13,7 +13,3 @@ __pycache__/
 # streamlit
 .streamlit/
 
-# local indexes / artifacts (optional)
-weibo_faiss_index/
-backend/weibo_faiss_index/
-indexes/
