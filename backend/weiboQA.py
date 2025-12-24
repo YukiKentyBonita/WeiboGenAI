@@ -40,7 +40,7 @@ if not openai_api_key:
 
 llm = ChatOpenAI(
     api_key=openai_api_key,
-    model="gpt-4o-mini",
+    model="gpt-4.1-mini",
     temperature=0.7,
     max_tokens=600
 )

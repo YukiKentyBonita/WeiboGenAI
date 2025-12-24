@@ -3,6 +3,7 @@ import re
 import boto3
 import pandas as pd
 import datahandling.DataHandling as dh
+from pathlib import Path
 
 
 # ---------- Initialize AWS Translate client ----------
@@ -76,6 +77,9 @@ def preprocess_posts(input_path: str, output_path: str):
 
 
 if __name__ == "__main__":
-    input_csv = "./posts.csv"
-    output_csv = "./posts_processed.csv"
+    BASE_DIR = Path(__file__).resolve().parent
+    input_csv = BASE_DIR.parent / "data" / "raw" / "posts.csv"
+    output_csv = BASE_DIR.parent / "data" / "processed" / "posts_processed.csv"
+
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
     preprocess_posts(input_csv, output_csv)
