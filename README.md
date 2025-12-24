@@ -7,8 +7,8 @@ A bilingual (Chinese–English) GenAI question-answering system built on Weibo p
 ## Overview
 
 This project is an end-to-end GenAI application that allows users to ask natural-language questions about a specific Weibo account’s posts and receive concise, context-aware answers.
-
 The system scrapes Weibo content, processes and stores post text with metadata, indexes it using vector embeddings, retrieves relevant posts, and constructs a grounded answer using a large language model. 
+
 ---
 
 ## Current Features
@@ -35,6 +35,7 @@ Did he mention traveling this year?
 
 ## High-Level Architecture
 
+```text
 User Question
     ↓
 Query Expansion
@@ -46,11 +47,13 @@ Recency Boost + Deduplication + Context Curation
 LLM Answer Generation
     ↓
 Final Answer
+```
 
 ---
 
 ## Project Structure
 
+```text
 .
 ├── backend/              # Ingestion, processing, embedding, indexing, Q&A orchestration (question → answer)
     └──  weibo_faiss_index/    # Persisted FAISS vector index
@@ -62,6 +65,7 @@ Final Answer
 ├── datahandling          # Data retrieval and preprocessing
 ├── README.md
 └── requirements.txt
+```
 
 ---
 
@@ -84,9 +88,9 @@ Final Answer
 ```
 
 ### Configuration
-export OPENAI_API_KEY="YOUR_KEY_HERE"
-# additional config (cookies path, model name, etc.) if needed
-# change cookies path in datahandling/PostsDoloader.py to specify which user's posts to download
+- export OPENAI_API_KEY="YOUR_KEY_HERE"
+- additional config (cookies path, model name, etc.) if needed
+- change cookies path in datahandling/PostsDoloader.py to specify which user's posts to download
 
 ### Typical Workflow
 1) Scrape / ingest Weibo posts: python3 PostsDownloader.py
