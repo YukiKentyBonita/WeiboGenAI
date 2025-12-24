@@ -14,20 +14,20 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 FAISS_INDEX_PATH = BASE_DIR / "weibo_faiss_index"
-# ---------- Sort Document by timestamp ----------
-def sort_docs_by_time_desc(docs: List[Document]) -> List[Document]:
-    def parse_time(doc: Document):
-        m = doc.metadata or {}
-        t = m.get("created_at")
-        if t is None:
-            return datetime.min
+# # ---------- Sort Document by timestamp ----------
+# def sort_docs_by_time_desc(docs: List[Document]) -> List[Document]:
+#     def parse_time(doc: Document):
+#         m = doc.metadata or {}
+#         t = m.get("created_at")
+#         if t is None:
+#             return datetime.min
 
-        try:
-            return datetime.fromisoformat(str(t))
-        except Exception:
-            return datetime.min # minimal time if parsing fails
+#         try:
+#             return datetime.fromisoformat(str(t))
+#         except Exception:
+#             return datetime.min # minimal time if parsing fails
 
-    return sorted(docs, key=parse_time, reverse=True)
+#     return sorted(docs, key=parse_time, reverse=True)
 
 
 # ---------- Setup LLM and embeddings ----------
@@ -82,14 +82,49 @@ def format_context(docs: List[Document]) -> str:
 
     return "\n\n".join(parts)
 
+# ---------- Expand query using LLM ----------
+def expand_query(question: str) -> str:
+    prompt = f"""
+        You are helping to improve search over a Chinese actor's Weibo posts.
+
+        The user will ask a question (in Chinese or English).
+        Your task is to rewrite it into a short, focused search query that:
+        - Includes important keywords, entity names (like drama titles, character names), or hashtags if relevant.
+        - Can use both Chinese and English words.
+        - Is at most 1–2 short sentences.
+        - No explanation, no extra text: output ONLY the rewritten search query.
+
+        User question:
+        {question}
+
+        Rewritten search query: """.strip()
+
+    try:
+        # ChatOpenAI: passing a string => treated as user message
+        response = llm.invoke(prompt)
+        expanded = response.content.strip()
+        # Fallback: if somehow empty, use original
+        if not expanded:
+            return question
+        return expanded
+    except Exception as e:
+        print(f"Error expanding query: {e}")
+        return question
+    
+
 # ---------- Answer a question ----------
 def answer_question(question: str, vectorstore: FAISS, k: int = 5) -> Tuple[str, List[Document]]:
+    # Expand query
+    expanded_query = expand_query(question)
+    print(f"[DEBUG] Original question: {question}")
+    print(f"[DEBUG] Expanded query:   {expanded_query}")
+
     # retrieve more than k, trim later
     RETRIEVAL_FLOOR_FOR_RECENT = 15
     FINAL_CONTEXT_CAP = k
     semantic_k = max(k, RETRIEVAL_FLOOR_FOR_RECENT) if looks_like_recent_question(question) else k
     retriever = vectorstore.as_retriever(search_kwargs={"k": semantic_k})
-    docs = retriever.invoke(question)  # list[Document]
+    docs = retriever.invoke(expanded_query)  # list[Document]
     print("semantic docs:", len(docs))
 
     # If user asks "recent/latest", add newest posts to context
@@ -110,9 +145,12 @@ def answer_question(question: str, vectorstore: FAISS, k: int = 5) -> Tuple[str,
     print("final docs:", len(docs))
 
     if not docs:
-        return "我没有找到和这个问题相关的微博内容，所以暂时无法回答。(I couldn't find any relevant posts.)"
+        return (
+            "我没有找到和这个问题相关的微博内容，所以暂时无法回答。(I couldn't find any relevant posts.)",
+            []
+        )
 
-    docs = sort_docs_by_time_desc(docs) # sort by time descending
+    # docs = sort_docs_by_time_desc(docs) # sort by time descending
     context = format_context(docs)
 
     prompt = f"""
@@ -124,6 +162,9 @@ If the information is not in these posts, say you don't know instead of guessing
 
 /* User question (may be Chinese or English): */
 {question}
+
+/* Search query used to find posts (for your reference only, do not copy): */
+{expanded_query}
 
 /* Relevant Weibo posts: */
 {context}
