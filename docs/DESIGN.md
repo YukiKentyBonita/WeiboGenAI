@@ -229,19 +229,17 @@ The application can be accessed in two ways:
 
 ## 9. Known Limitations
 
-- Dynamic post updates not supported. Users must download the posts and create the FAISS index manually when new posts are available
-- Currently, the system translates all posts into English in advance. This may add noices when the user question is in Chinese. Later increments will use a hybrid approach, where an additional FAISS index is built only based on the Chinese original posts. This will be used for Chinese input questions.
+- Dynamic post updates are not currently supported; new posts require re-running the ingestion pipeline and rebuilding the FAISS index
+- All posts are currently translated into English in advance, which may introduce noise for Chinese-language queries
+
+A hybrid retrieval strategy using both original Chinese posts and translated English posts is planned to address this limitation.
 
 ---
 
 ## 10. Future Improvements
 
-- More information may be provided to LLM to improve answer quality.
-- Database will be used instead of local CSV files to support dynamic post updates.
-- Hybrid approach for FAISS index generation.
+- Improve prompt design by providing richer contextual information to the LLM
+- Replace local CSV storage with a database to support incremental updates
+- Implement hybrid FAISS indices for multilingual retrieval
 
 ---
-
-## 11. Interview Walkthrough (Optional but Recommended)
-
-A concise explanation of how you would explain this system in a 5–10 minute interview.
