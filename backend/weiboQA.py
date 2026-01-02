@@ -1,4 +1,5 @@
 from buildFAISSIndex import get_embedding_model, build_faiss_index
+from time_question_helper import looks_like_recent_question, parse_created_at, get_most_recent_docs, dedupe_docs
 
 from langchain_openai import ChatOpenAI
 from langchain_community.vectorstores import FAISS
@@ -6,34 +7,14 @@ from langchain_core.documents import Document
 
 import os
 from typing import List, Tuple
-
 from datetime import datetime
-
-from time_question_helper import looks_like_recent_question, parse_created_at, get_most_recent_docs, dedupe_docs
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 FAISS_INDEX_PATH = BASE_DIR / "weibo_faiss_index"
-# # ---------- Sort Document by timestamp ----------
-# def sort_docs_by_time_desc(docs: List[Document]) -> List[Document]:
-#     def parse_time(doc: Document):
-#         m = doc.metadata or {}
-#         t = m.get("created_at")
-#         if t is None:
-#             return datetime.min
-
-#         try:
-#             return datetime.fromisoformat(str(t))
-#         except Exception:
-#             return datetime.min # minimal time if parsing fails
-
-#     return sorted(docs, key=parse_time, reverse=True)
 
 
 # ---------- Setup LLM and embeddings ----------
-
-# os.environ['OPENAI_API_KEY'] = openaikey
-# llm = OpenAI(temperature=0.4)
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise ValueError("OPENAI_API_KEY is not set in environment variables.")
@@ -56,7 +37,7 @@ def load_faiss_vectorstore(index_path: str = str(FAISS_INDEX_PATH)) -> FAISS:
         allow_dangerous_deserialization=True
     )
     print("Loaded FAISS vector store with", vectorstore.index.ntotal, "vectors.")
-    # sanity check: inspect one stored doc
+    # inspect one stored doc
     any_id = list(vectorstore.docstore._dict.keys())[0]
     doc0 = vectorstore.docstore.search(any_id)
     print("DEBUG loaded doc created_at:", doc0.metadata.get("created_at"))
@@ -100,10 +81,11 @@ def expand_query(question: str) -> str:
         Rewritten search query: """.strip()
 
     try:
-        # ChatOpenAI: passing a string => treated as user message
+        # Passing a string to treated as user message
         response = llm.invoke(prompt)
         expanded = response.content.strip()
-        # Fallback: if somehow empty, use original
+
+        # If somehow empty, use original
         if not expanded:
             return question
         return expanded
@@ -150,7 +132,6 @@ def answer_question(question: str, vectorstore: FAISS, k: int = 5) -> Tuple[str,
             []
         )
 
-    # docs = sort_docs_by_time_desc(docs) # sort by time descending
     context = format_context(docs)
 
     prompt = f"""

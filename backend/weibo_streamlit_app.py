@@ -1,6 +1,6 @@
 import streamlit as st
-# from backend.weiboQA import load_faiss_vectorstore, answer_question
 from weiboQA import load_faiss_vectorstore, answer_question
+
 # ---------- Cache the vectorstore so it's not reloaded every time ----------
 @st.cache_resource
 def get_vectorstore():

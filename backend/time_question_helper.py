@@ -23,11 +23,6 @@ def parse_created_at(doc: Document) -> datetime:
     except Exception:
         return datetime.min
 
-# def get_most_recent_docs(vectorstore: FAISS, n: int = 8) -> List[Document]:
-#     all_docs = list(vectorstore.docstore._dict.values())
-#     all_docs.sort(key=parse_created_at, reverse=True)
-#     return all_docs[:n]
-
 def get_most_recent_docs(vectorstore: FAISS, n: int = 8) -> List[Document]:
     all_docs = list(vectorstore.docstore._dict.values())
     all_docs.sort(key=parse_created_at, reverse=True)

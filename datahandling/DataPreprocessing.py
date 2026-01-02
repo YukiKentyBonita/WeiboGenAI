@@ -7,17 +7,11 @@ from pathlib import Path
 
 
 # ---------- Initialize AWS Translate client ----------
-
 translate = boto3.client("translate", region_name="us-east-1")
 
 
 # ---------- Translation helper ----------
-
 def content_translation(text: str):
-    """
-    Clean a Weibo post's content and translate Chinese -> English.
-    Returns None if text is empty or cannot be translated.
-    """
     if pd.isnull(text):
         return None
 
@@ -44,12 +38,7 @@ def content_translation(text: str):
 
 
 # ---------- Main preprocessing ----------
-
 def preprocess_posts(input_path: str, output_path: str):
-    """
-    Load raw posts CSV, drop unused columns, add English translation,
-    and save to a new processed CSV.
-    """
     print(f"Loading posts from: {input_path}")
     posts_df = dh.load_data(input_path)
 

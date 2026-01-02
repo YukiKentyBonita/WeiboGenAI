@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import faiss
 import os
+import re
+from datetime import datetime
 
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
@@ -9,13 +11,10 @@ from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_community.docstore.in_memory import InMemoryDocstore
 
-import re
-from datetime import datetime
-
 # ---------- Normalize Weibo create_time format ----------
 def normalize_weibo_create_time(raw: str, reference: datetime | None = None, default_year: int | None = None) -> str | None:
     """
-    Converts various Weibo time strings to 'YYYY-MM-DD HH:MM:SS' or returns None.
+    Converts time strings to 'YYYY-MM-DD HH:MM:SS' or returns None.
     """
     if raw is None:
         return None
@@ -30,23 +29,23 @@ def normalize_weibo_create_time(raw: str, reference: datetime | None = None, def
     #  default_year if provided
     if reference is None:
         if default_year is not None:
-            reference = datetime(default_year, 1, 1)   # <-- new
+            reference = datetime(default_year, 1, 1)  
         else:
-            reference = datetime.now()                 # <-- keep as fallback
+            reference = datetime.now()               
 
-    # 1) ISO-like: YYYY-MM-DD HH:MM(:SS)
+    # ISO-like: YYYY-MM-DD HH:MM(:SS)
     try:
         dt = datetime.fromisoformat(s)
         return dt.strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
         pass
 
-    # 2) Chinese: MM月DD日 HH:MM
+    # Chinese: MM月DD日 HH:MM
     m = re.match(r"^\s*(\d{1,2})月(\d{1,2})日\s+(\d{1,2}):(\d{2})\s*$", s)
     if m:
         month, day, hh, mm = map(int, m.groups())
 
-        # if default_year exists, force it
+        # if default_year exists
         if default_year is not None:
             year = default_year
         else:
@@ -67,7 +66,7 @@ def get_embedding_model(provider: str = "hf"):
     provider = "openai"  -> OpenAI (paid, API)
     """
     if provider == "hf":
-        print("🔹 Using HuggingFace embeddings (sentence-transformers/all-MiniLM-L6-v2)")
+        print("Using HuggingFace embeddings (sentence-transformers/all-MiniLM-L6-v2)")
         hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
         if not hf_token:
             raise ValueError(
@@ -78,7 +77,7 @@ def get_embedding_model(provider: str = "hf"):
             model="sentence-transformers/all-MiniLM-L6-v2"
         )
     elif provider == "openai":
-        print("🔹 Using OpenAI embeddings (text-embedding-3-small)")
+        print("Using OpenAI embeddings (text-embedding-3-small)")
         openai_api_key = os.getenv("OPENAI_API_KEY")
         if not openai_api_key:
             raise ValueError("OPENAI_API_KEY is not set in environment variables.")
@@ -160,15 +159,14 @@ def build_faiss_index(csv_path: str, index_dir: str = "weibo_faiss_index"):
     print(f"Split into {len(split_docs)} chunks.")
 
     print("Building FAISS index...")
-    # storevector = FAISS.from_documents(split_docs, embeddings)
     
     texts = [d.page_content for d in split_docs]
     metadatas = [d.metadata for d in split_docs]
 
-    # Get embeddings (may come back as lists, objects, etc.)
+    # Get embeddings
     raw_vectors = embeddings.embed_documents(texts)
 
-    # Force clean 2D float32 matrix
+    # Force 2D float32 matrix
     vectors = np.array(raw_vectors, dtype=np.float32)
 
     # Validate
@@ -188,15 +186,8 @@ def build_faiss_index(csv_path: str, index_dir: str = "weibo_faiss_index"):
 
     index.add(vectors)
 
-    # Build docstore + id mapping required by LangChain FAISS wrapper
+    # Build docstore and id mapping required by LangChain FAISS wrapper
     ids = [str(i) for i in range(len(texts))]
-
-    # storevector = FAISS(
-    #     embedding_function=embeddings,
-    #     index=index,
-    #     docstore={ids[i]: Document(page_content=texts[i], metadata=metadatas[i]) for i in range(len(texts))},
-    #     index_to_docstore_id={i: ids[i] for i in range(len(ids))},
-    # )
 
     docs_dict = {
         ids[i]: Document(page_content=texts[i], metadata=metadatas[i])
@@ -217,6 +208,3 @@ def build_faiss_index(csv_path: str, index_dir: str = "weibo_faiss_index"):
 
 if __name__ == "__main__":
     build_faiss_index("../data/processed/posts_processed.csv", "weibo_faiss_index")
-
-# if __name__ == "__main__":
-#     build_documents(load_processed_posts("./posts_processed.csv"))
